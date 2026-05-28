@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quote Request Agent</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; }
+    .card { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .email-body { white-space: pre-wrap; font-family: inherit; background: #f8f9fa; border-radius: .375rem; padding: 1rem; }
+  </style>
+</head>
+<body>
+<div class="container py-5" style="max-width: 680px;">
+
+  <h1 class="h4 mb-4 fw-semibold">Quote Request Agent</h1>
+
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {% if sent %}
+  <!-- Success view -->
+  <div class="card p-4 text-center">
+    <div class="display-6 mb-2">&#10003;</div>
+    <h2 class="h5 fw-semibold mb-1">Email sent</h2>
+    <p class="text-muted mb-3">Quote request delivered to <strong>{{ sent }}</strong>.</p>
+    <a href="/" class="btn btn-outline-secondary">New request</a>
+  </div>
+
+  {% elif draft %}
+  <!-- Preview / confirm view -->
+  <div class="card p-4 mb-3">
+    <h2 class="h6 text-uppercase text-muted mb-3 fw-semibold">Review before sending</h2>
+    <dl class="row mb-0">
+      <dt class="col-sm-3">To</dt>
+      <dd class="col-sm-9">{{ draft.to_email }}</dd>
+      <dt class="col-sm-3">Subject</dt>
+      <dd class="col-sm-9">{{ draft.subject }}</dd>
+      <dt class="col-sm-3">Body</dt>
+      <dd class="col-sm-9">
+        <div class="email-body">{{ draft.body }}</div>
+      </dd>
+    </dl>
+  </div>
+  <div class="d-flex gap-2">
+    <form action="/send" method="post">
+      <button class="btn btn-primary" type="submit">Confirm &amp; Send</button>
+    </form>
+    <a href="/" class="btn btn-outline-secondary">Start over</a>
+  </div>
+
+  {% else %}
+  <!-- Form view -->
+  <div class="card p-4">
+    <form action="/preview" method="post">
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="vendor_name">Vendor Name</label>
+        <input class="form-control" id="vendor_name" name="vendor_name" type="text" required placeholder="e.g. ABC Steel Supply">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="material">Material</label>
+        <input class="form-control" id="material" name="material" type="text" required placeholder="e.g. Galvanized Steel Pipe">
+      </div>
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label fw-semibold" for="size">Size</label>
+          <input class="form-control" id="size" name="size" type="text" required placeholder='e.g. 2" x 10ft'>
+        </div>
+        <div class="col mb-3">
+          <label class="form-label fw-semibold" for="quantity">Quantity</label>
+          <input class="form-control" id="quantity" name="quantity" type="text" required placeholder="e.g. 50">
+        </div>
+      </div>
+      <button class="btn btn-primary w-100" type="submit">Preview Email</button>
+    </form>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>
