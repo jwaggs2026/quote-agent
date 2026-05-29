@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-<div class="container py-5" style="max-width: 680px;">
+<div class="container py-5" style="max-width: 860px;">
 
   <h1 class="h4 mb-4 fw-semibold">Quote Request Agent</h1>
 
@@ -55,27 +55,71 @@
   <!-- Form view -->
   <div class="card p-4">
     <form action="/preview" method="post">
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label fw-semibold" for="vendor_name">Vendor Name</label>
         <input class="form-control" id="vendor_name" name="vendor_name" type="text" required placeholder="e.g. ABC Steel Supply">
       </div>
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="material">Material</label>
-        <input class="form-control" id="material" name="material" type="text" required placeholder="e.g. Galvanized Steel Pipe">
-      </div>
-      <div class="row">
-        <div class="col mb-3">
-          <label class="form-label fw-semibold" for="size">Size</label>
-          <input class="form-control" id="size" name="size" type="text" required placeholder='e.g. 2" x 10ft'>
-        </div>
-        <div class="col mb-3">
-          <label class="form-label fw-semibold" for="quantity">Quantity</label>
-          <input class="form-control" id="quantity" name="quantity" type="text" required placeholder="e.g. 50">
-        </div>
-      </div>
+
+      <div class="mb-2 fw-semibold">Line Items</div>
+      <table class="table table-bordered table-sm align-middle mb-2" id="items-table">
+        <thead class="table-light">
+          <tr>
+            <th>Material</th>
+            <th style="width:140px">Size</th>
+            <th style="width:100px">Qty</th>
+            <th>Details <span class="text-muted fw-normal">(optional)</span></th>
+            <th style="width:40px"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body">
+          <tr>
+            <td><input class="form-control form-control-sm" name="material" type="text" required placeholder="e.g. Galvanized Steel Pipe"></td>
+            <td><input class="form-control form-control-sm" name="size" type="text" required placeholder='e.g. 2" x 10ft'></td>
+            <td><input class="form-control form-control-sm" name="quantity" type="text" required placeholder="e.g. 50"></td>
+            <td><input class="form-control form-control-sm" name="details" type="text" placeholder="e.g. Hot-dip galvanized"></td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row" style="visibility:hidden">&times;</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="add-row">+ Add Item</button>
+
       <button class="btn btn-primary w-100" type="submit">Preview Email</button>
     </form>
   </div>
+
+  <template id="row-template">
+    <tr>
+      <td><input class="form-control form-control-sm" name="material" type="text" required placeholder="e.g. Galvanized Steel Pipe"></td>
+      <td><input class="form-control form-control-sm" name="size" type="text" required placeholder='e.g. 2" x 10ft'></td>
+      <td><input class="form-control form-control-sm" name="quantity" type="text" required placeholder="e.g. 50"></td>
+      <td><input class="form-control form-control-sm" name="details" type="text" placeholder="e.g. Hot-dip galvanized"></td>
+      <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row">&times;</button></td>
+    </tr>
+  </template>
+
+  <script>
+    const tbody = document.getElementById('items-body');
+    const template = document.getElementById('row-template');
+
+    function updateRemoveButtons() {
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach(row => {
+        row.querySelector('.remove-row').style.visibility = rows.length === 1 ? 'hidden' : 'visible';
+      });
+    }
+
+    document.getElementById('add-row').addEventListener('click', () => {
+      tbody.appendChild(template.content.cloneNode(true));
+      updateRemoveButtons();
+    });
+
+    tbody.addEventListener('click', e => {
+      if (!e.target.classList.contains('remove-row')) return;
+      e.target.closest('tr').remove();
+      updateRemoveButtons();
+    });
+  </script>
   {% endif %}
 
 </div>

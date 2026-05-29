@@ -21,12 +21,18 @@ def index():
 @app.route("/preview", methods=["POST"])
 def preview():
     vendor_name = request.form["vendor_name"].strip()
-    material = request.form["material"].strip()
-    size = request.form["size"].strip()
-    quantity = request.form["quantity"].strip()
+    materials  = request.form.getlist("material")
+    sizes      = request.form.getlist("size")
+    quantities = request.form.getlist("quantity")
+    details    = request.form.getlist("details")
+
+    items = [
+        {"material": m.strip(), "size": s.strip(), "quantity": q.strip(), "details": d.strip()}
+        for m, s, q, d in zip(materials, sizes, quantities, details)
+    ]
 
     try:
-        draft = run_agent(vendor_name, material, size, quantity)
+        draft = run_agent(vendor_name, items)
     except Exception as e:
         return render_template("index.html", error=str(e))
 
