@@ -4,7 +4,7 @@ import openpyxl
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=False)
 
 
 def lookup_vendor_excel(vendor_name: str) -> dict:
