@@ -1,60 +1,38 @@
 import os
 import smtplib
-import requests
-from base64 import b64encode
+import openpyxl
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
 load_dotenv()
 
-QB_CLIENT_ID = os.environ["QB_CLIENT_ID"]
-QB_CLIENT_SECRET = os.environ["QB_CLIENT_SECRET"]
-QB_REALM_ID = os.environ["QB_REALM_ID"]
-QB_REFRESH_TOKEN = os.environ["QB_REFRESH_TOKEN"]
-QB_BASE_URL = "https://sandbox-quickbooks.api.intuit.com"
 
+def lookup_vendor_excel(vendor_name: str) -> dict:
+    path = os.path.join(os.path.dirname(__file__), "vendors.xlsx")
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = wb.worksheets[0]
 
+    rows = iter(ws.rows)
+    headers = [cell.value for cell in next(rows)]
+    col = {h: i for i, h in enumerate(headers) if h}
 
-def _qb_access_token() -> str:
-    credentials = b64encode(f"{QB_CLIENT_ID}:{QB_CLIENT_SECRET}".encode()).decode()
-    resp = requests.post(
-        "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "refresh_token", "refresh_token": QB_REFRESH_TOKEN},
-        timeout=10,
-    )
-    if not resp.ok:
-        raise RuntimeError(f"QB token refresh failed {resp.status_code}: {resp.text}")
-    return resp.json()["access_token"]
+    query = vendor_name.lower()
+    for row in rows:
+        values = [cell.value for cell in row]
+        vendor_cell = str(values[col["Vendor"]] or "")
+        if query not in vendor_cell.lower():
+            continue
+        first = str(values[col["First Name"]] or "").strip()
+        last = str(values[col["Last Name"]] or "").strip()
+        main_email = str(values[col["Main Email"]] or "").strip()
+        alt_email = str(values[col["Alt. Email 1"]] or "").strip()
+        return {
+            "vendor_name": vendor_cell.strip(),
+            "rep_name": f"{first} {last}".strip(),
+            "rep_email_address": main_email or alt_email,
+        }
 
-
-def lookup_vendor_quickbooks(vendor_name: str) -> dict:
-    token = _qb_access_token()
-    query = f"SELECT * FROM Vendor WHERE DisplayName LIKE '%{vendor_name}%'"
-    url = f"{QB_BASE_URL}/v3/company/{QB_REALM_ID}/query"
-    resp = requests.get(
-        url,
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
-        params={"query": query},
-        timeout=10,
-    )
-    resp.raise_for_status()
-    vendors = resp.json().get("QueryResponse", {}).get("Vendor", [])
-    if not vendors:
-        return {"error": f"No vendor found matching '{vendor_name}'"}
-    v = vendors[0]
-    given = v.get("GivenName", "")
-    family = v.get("FamilyName", "")
-    rep_name = f"{given} {family}".strip() or v.get("DisplayName", "")
-    email = v.get("PrimaryEmailAddr", {}).get("Address", "")
-    return {
-        "vendor_name": v.get("DisplayName", vendor_name),
-        "rep_name": rep_name,
-        "rep_email_address": email,
-    }
+    return {"error": f"No vendor found matching '{vendor_name}'"}
 
 
 def draft_quote_email(
@@ -126,10 +104,18 @@ def send_email_outlook(subject: str, body: str, to_email: str) -> dict:
     msg["From"] = user
     msg["To"] = to_email
 
-    with smtplib.SMTP(host, port) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.login(user, password)
-        smtp.sendmail(user, [to_email], msg.as_string())
+    try:
+        with smtplib.SMTP(host, port) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(user, password)
+            print(f"[send_email] calling sendmail: from={user} to={to_email}", flush=True)
+            smtp.sendmail(user, [to_email], msg.as_string())
+            print(f"[send_email] sendmail returned OK", flush=True)
+    except Exception as e:
+        import traceback
+        print(f"[send_email] FAILED: {e}", flush=True)
+        traceback.print_exc()
+        return {"status": "error", "error": str(e), "to": to_email}
 
     return {"status": "sent", "to": to_email}

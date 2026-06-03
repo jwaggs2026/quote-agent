@@ -2,7 +2,7 @@ import os
 import json
 import anthropic
 from dotenv import load_dotenv
-from tools import lookup_vendor_quickbooks, draft_quote_email
+from tools import lookup_vendor_excel, draft_quote_email
 
 load_dotenv()
 
@@ -11,21 +11,21 @@ client = anthropic.Anthropic()
 SYSTEM_PROMPT = """You are a quote-requesting agent for Midstate.
 
 You MUST always call both tools in this exact order:
-1. Call lookup_vendor_quickbooks with the vendor name.
+1. Call lookup_vendor_excel with the vendor name.
 2. Immediately after receiving the result, call draft_quote_email using the rep_name and rep_email_address from step 1 along with the items list from the user message.
 
 Do not stop after step 1. Do not produce any text response until both tools have been called and draft_quote_email has returned. After draft_quote_email returns, respond with a brief confirmation that the draft is ready."""
 
 TOOL_DEFINITIONS = [
     {
-        "name": "lookup_vendor_quickbooks",
-        "description": "Call this tool with a vendor name from the form input to retrieve the vendor's rep name and email from QuickBooks before drafting the quote email.",
+        "name": "lookup_vendor_excel",
+        "description": "Call this tool with a vendor name from the form input to retrieve the vendor's rep name and email from the local vendors.xlsx spreadsheet before drafting the quote email.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "vendor_name": {
                     "type": "string",
-                    "description": "The vendor name from the form input to look up in QuickBooks",
+                    "description": "The vendor name from the form input to look up in vendors.xlsx",
                 }
             },
             "required": ["vendor_name"],
@@ -61,7 +61,7 @@ TOOL_DEFINITIONS = [
 ]
 
 TOOL_DISPATCH = {
-    "lookup_vendor_quickbooks": lookup_vendor_quickbooks,
+    "lookup_vendor_excel": lookup_vendor_excel,
     "draft_quote_email": draft_quote_email,
 }
 
