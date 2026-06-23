@@ -87,13 +87,13 @@ def draft_quote_email(
         f"{table}\n\n"
         f"Could you please send over pricing and lead time at your earliest convenience?\n\n"
         f"Thank you,\n"
-        f"Midstate"
+        f"Mid-State Metals"
     )
     return {"subject": subject, "body": body, "to_email": email}
 
 
 
-def send_email_outlook(subject: str, body: str, to_email: str) -> dict:
+def send_email(subject: str, body: str, to_email: str) -> dict:
     host = os.environ["SMTP_HOST"]
     port = int(os.environ["SMTP_PORT"])
     user = os.environ["SMTP_USER"]

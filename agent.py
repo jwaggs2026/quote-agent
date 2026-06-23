@@ -88,6 +88,8 @@ def run_agent(vendor_name: str, items: list) -> dict:
     ]
 
     draft = None
+    tokens_in = 0
+    tokens_out = 0
 
     while True:
         response = client.messages.create(
@@ -97,6 +99,9 @@ def run_agent(vendor_name: str, items: list) -> dict:
             tools=TOOL_DEFINITIONS,
             messages=messages,
         )
+
+        tokens_in += response.usage.input_tokens
+        tokens_out += response.usage.output_tokens
 
         messages.append({"role": "assistant", "content": response.content})
 
@@ -127,4 +132,4 @@ def run_agent(vendor_name: str, items: list) -> dict:
     if draft is None:
         raise RuntimeError("Agent completed without calling draft_quote_email")
 
-    return draft
+    return {"draft": draft, "tokens_in": tokens_in, "tokens_out": tokens_out}
