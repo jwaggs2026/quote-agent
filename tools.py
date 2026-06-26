@@ -1,8 +1,12 @@
 import os
-import smtplib
+import base64
 import openpyxl
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 load_dotenv(override=False)
 
@@ -94,24 +98,28 @@ def draft_quote_email(
 
 
 def send_email(subject: str, body: str, to_email: str) -> dict:
-    host = os.environ["SMTP_HOST"]
-    port = int(os.environ["SMTP_PORT"])
-    user = os.environ["SMTP_USER"]
-    password = os.environ["SMTP_PASSWORD"]
+    creds = Credentials(
+        token=None,
+        refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        token_uri="https://oauth2.googleapis.com/token",
+    )
+    sender = os.environ["GMAIL_SENDER"]
 
     msg = MIMEText(body, "plain")
     msg["Subject"] = subject
-    msg["From"] = user
+    msg["From"] = sender
     msg["To"] = to_email
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
 
     try:
-        with smtplib.SMTP(host, port) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(user, password)
-            print(f"[send_email] calling sendmail: from={user} to={to_email}", flush=True)
-            smtp.sendmail(user, [to_email], msg.as_string())
-            print(f"[send_email] sendmail returned OK", flush=True)
+        service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        print(f"[send_email] sent id={result.get('id')} to={to_email}", flush=True)
+    except HttpError as e:
+        print(f"[send_email] HttpError: {e}", flush=True)
+        return {"status": "error", "error": str(e), "to": to_email}
     except Exception as e:
         import traceback
         print(f"[send_email] FAILED: {e}", flush=True)

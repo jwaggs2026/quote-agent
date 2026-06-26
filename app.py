@@ -106,6 +106,7 @@ def preview():
 def send():
     draft = session.get("draft")
     if not draft:
+        send_error_alert(str(uuid.uuid4()), "send_missing_draft", "No draft in session", datetime.now(timezone.utc).isoformat())
         return redirect(url_for("index"))
 
     run_id          = session.get("run_id", str(uuid.uuid4()))
